@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Smart Content Generator{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1>Research & Content Generator</h1>
+    
+    <!-- Create New Project -->
+    <div class="project-creator">
+        <h2>Create New Content</h2>
+        
+        <form id="contentGeneratorForm" class="generator-form">
+            <div class="form-group">
+                <label for="topic">Research Topic:</label>
+                <input type="text" id="topic" name="topic" 
+                       placeholder="Enter your research topic..." 
+                       required>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="min_words">Minimum Words:</label>
+                    <input type="number" id="min_words" name="min_words" 
+                           value="20000" min="1000" max="100000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="max_words">Maximum Words:</label>
+                    <input type="number" id="max_words" name="max_words" 
+                           value="30000" min="1000" max="100000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="target_words">Target Words:</label>
+                    <input type="number" id="target_words" name="target_words" 
+                           value="25000" min="1000" max="100000">
+                </div>
+            </div>
+            
+            <!-- Advanced Settings -->
+            <div class="advanced-settings">
+                <h3>Advanced Settings</h3>
+                
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="include_images" checked>
+                            Include Images Automatically
+                        </label>
+                        <input type="number" id="image_per_section" 
+                               value="2" min="1" max="5" 
+                               placeholder="Images per section">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="citation_style">Citation Style:</label>
+                        <select id="citation_style">
+                            <option value="APA">APA</option>
+                            <option value="MLA">MLA</option>
+                            <option value="Chicago">Chicago</option>
+                            <option value="Harvard">Harvard</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="target_plagiarism">Target Plagiarism %:</label>
+                        <input type="number" id="target_plagiarism" 
+                               value="5.0" min="0" max="100" step="0.1">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="target_ai_score">Max AI Score %:</label>
+                        <input type="number" id="target_ai_score" 
+                               value="10.0" min="0" max="100" step="0.1">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="auto_images" checked>
+                            Auto-find Relevant Images
+                        </label>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="grammar_check" checked>
+                            Grammar & Spell Check
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-primary" id="generateBtn">
+                Start Generation
+            </button>
+        </form>
+    </div>
+    
+    <!-- Progress Tracker -->
+    <div id="progressTracker" class="progress-tracker" style="display: none;">
+        <h3>Generation Progress</h3>
+        
+        <div class="progress-steps">
+            <div class="step" id="step-research">
+                <span class="step-icon">🔍</span>
+                <span class="step-label">Researching</span>
+            </div>
+            <div class="step" id="step-images">
+                <span class="step-icon">🖼️</span>
+                <span class="step-label">Finding Images</span>
+            </div>
+            <div class="step" id="step-writing">
+                <span class="step-icon">✍️</span>
+                <span class="step-label">Writing Content</span>
+            </div>
+            <div class="step" id="step-checking">
+                <span class="step-icon">✅</span>
+                <span class="step-label">Quality Check</span>
+            </div>
+            <div class="step" id="step-done">
+                <span class="step-icon">📄</span>
+                <span class="step-label">Generating Document</span>
+            </div>
+        </div>
+        
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div class="progress-info">
+            <span id="progressStatus">Starting...</span>
+            <span id="progressPercentage">0%</span>
+        </div>
+        
+        <!-- Plagiarism & AI Score Display -->
+        <div class="scores-display" id="scoresDisplay" style="display: none;">
+            <div class="score-card">
+                <h4>Plagiarism Score</h4>
+                <div class="score-value" id="plagiarismScore">--</div>
+                <div class="score-bar">
+                    <div class="score-fill" id="plagiarismBar"></div>
+                </div>
+            </div>
+            
+            <div class="score-card">
+                <h4>AI Detection Score</h4>
+                <div class="score-value" id="aiScore">--</div>
+                <div class="score-bar">
+                    <div class="score-fill" id="aiBar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Projects -->
+    <div class="projects-list">
+        <h2>Your Projects</h2>
+        
+        {% if projects %}
+            <div class="projects-grid">
+                {% for project in projects %}
+                <div class="project-card" id="project-{{ project.id }}">
+                    <h3>{{ project.topic[:50] }}...</h3>
+                    <div class="project-meta">
+                        <span>Words: {{ project.target_words }}</span>
+                        <span class="status-badge status-{{ project.status }}">
+                            {{ project.status | capitalize }}
+                        </span>
+                    </div>
+                    
+                    {% if project.status == 'completed' %}
+                    <div class="project-scores">
+                        <span>Plagiarism: {{ "%.1f"|format(project.plagiarism_score) }}%</span>
+                        <span>AI Score: {{ "%.1f"|format(project.ai_score) }}%</span>
+                    </div>
+                    <a href="/api/download/{{ project.id }}" class="btn-download">
+                        Download .docx
+                    </a>
+                    {% endif %}
+                    
+                    <div class="project-actions">
+                        <button onclick="viewProject({{ project.id }})" class="btn-secondary">
+                            View Details
+                        </button>
+                        <button onclick="editProject({{ project.id }})" class="btn-secondary">
+                            Edit
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="no-projects">No projects yet. Create your first content above!</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Dynamic Update System -->
+<dynamic-updater 
+    api-endpoint="/api/dynamic_update"
+    update-interval="5000">
+</dynamic-updater>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/progress-tracker.js') }}"></script>
+{% endblock %}
